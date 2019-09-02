@@ -1,3 +1,3 @@
 # gfw_huntershelper_classic
 
-Based on Fizzwidget Hunter's Helper (http://fizzwidget.com/notes/huntershelper/)
+Based on Fizzwidget's Hunter's Helper (http://fizzwidget.com/notes/huntershelper/)
