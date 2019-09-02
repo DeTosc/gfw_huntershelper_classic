@@ -1,7 +1,7 @@
 ------------------------------------------------------
 -- HuntersHelper.lua
 ------------------------------------------------------
-FHH_VERSION = "11200.2";
+FHH_VERSION = "11302.1";
 ------------------------------------------------------
 
 -- Saved configuration & info
@@ -26,8 +26,8 @@ MAX_REPORTED_ZONES = 4;
 
 function FHH_OnLoad()
 
-	this:RegisterEvent("PLAYER_ENTERING_WORLD");
-	this:RegisterEvent("UPDATE_MOUSEOVER_UNIT");
+	HuntersHelperFrame:RegisterEvent("PLAYER_ENTERING_WORLD");
+	HuntersHelperFrame:RegisterEvent("UPDATE_MOUSEOVER_UNIT");
 
 	-- Register Slash Commands
 	SLASH_FHH1 = "/huntershelper";
@@ -35,49 +35,49 @@ function FHH_OnLoad()
 	SlashCmdList["FHH"] = function(msg)
 		FHH_ChatCommandHandler(msg);
 	end
-	
+
 	GFWUtils.Print("Fizzwidget Hunter's Helper "..FHH_VERSION.." initialized!");
-	
+
 end
 
 function FHH_OnEvent(event, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
 
-	--DevTools_Dump({event=event, arg1=arg1, arg2=arg2, arg3=arg3, arg4=arg4, arg5=arg5, arg6=arg6, arg7=arg7, arg8=arg8, arg9=arg9});
+--DevTools_Dump({event=event, arg1=arg1, arg2=arg2, arg3=arg3, arg4=arg4, arg5=arg5, arg6=arg6, arg7=arg7, arg8=arg8, arg9=arg9});
 
 	if ( event == "PLAYER_ENTERING_WORLD" ) then
-		
+
 		_, realClass = UnitClass("player");
 		if (realClass == "HUNTER") then
 			-- only do stuff related to taming and checking hunter spells if you're a hunter.
-			this:RegisterEvent("UNIT_AURA");
-			this:RegisterEvent("UNIT_NAME_UPDATE");
-			this:RegisterEvent("CRAFT_SHOW");
-			this:RegisterEvent("CHAT_MSG_SYSTEM");
+			HuntersHelperFrame:RegisterEvent("UNIT_AURA");
+			HuntersHelperFrame:RegisterEvent("UNIT_NAME_UPDATE");
+			HuntersHelperFrame:RegisterEvent("CRAFT_SHOW");
+			HuntersHelperFrame:RegisterEvent("CHAT_MSG_SYSTEM");
 
 			if (FHH_State.RealmPlayer == nil) then
-				FHH_State.RealmPlayer = GetCVar("realmName") .. "." .. UnitName("player");
+				FHH_State.RealmPlayer = UnitName("player");
 			end
 			if (FHH_AbilityInfo == nil or FHH_AbilityInfo[FHH_State.RealmPlayer] == nil or GFWTable.Count(FHH_AbilityInfo[FHH_State.RealmPlayer]) == 0) then
-				
+
 				if (realClass == "HUNTER" and UnitLevel("player") > 9) then
 					GFWUtils.Print("Hunter's Helper needs to collect info about what pet skills you already know; please open your Beast Training window. (Info on future skills will be collected as they are learned.)");
 				end
 			end
 		end
-		
+
 	elseif ( event == "UPDATE_MOUSEOVER_UNIT" ) then
-	
+
 		if ( UnitExists("mouseover") and not UnitPlayerControlled("mouseover") and FHH_Config.Tooltip ) then
 
 			local _, myClass = UnitClass("player");
 			if (FHH_Config.Tooltip == "hunter" and myClass ~= "HUNTER") then return; end
-			
+
 			FHH_ModifyTooltip("mouseover");
 
 		end
-		
+
 	elseif ( event == "UNIT_AURA" ) then
-	
+
 		if ( arg1 == "player" and FHH_HasTameEffect("player") ) then
 			FHH_State.TamingCritter = UnitName("target");
 			local unlocalizedCreepName = GFWTable.KeyOf(FHH_Localized, FHH_State.TamingCritter);
@@ -86,9 +86,9 @@ function FHH_OnEvent(event, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9
 			end
 			FHH_State.TamingType = UnitClassification("target");
 		end
-			
+
 	elseif ( event == "UNIT_NAME_UPDATE" ) then
-	
+
 		if ( arg1 == "pet" and FHH_State.TamingCritter ) then
 			local loyaltyDescription = GetPetLoyalty();
 			if (loyaltyDescription) then
@@ -98,7 +98,7 @@ function FHH_OnEvent(event, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9
 					FHH_State.TamingCritter = nil;
 					FHH_State.TamingType = nil;
 					return;
-				end		
+				end
 			end
 			if (UnitName("pet") ~= UnitCreatureFamily("pet")) then
 				GFWUtils.Print("Got "..event.." but pet's UnitName() ~= UnitCreatureFamily(); ignoring.");
@@ -117,15 +117,17 @@ function FHH_OnEvent(event, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9
 		-- Beast Training uses the CraftFrame; we can tell it's not really a craft because it doesn't have a skill-level bar.
 		local name, rank, maxRank = GetCraftDisplaySkillLine();
 		if ( name ) then return; end
-		
+
 		FHH_ScanCraftFrame();
 
 	elseif ( event == "CHAT_MSG_SYSTEM" ) then
 
 		local pattern = GFWUtils.FormatToPattern(ERR_LEARN_SPELL_S); -- "You have learned a new spell: %s."
-		local _, _, compositeSpellName = string.find(arg1, pattern);
+    if arg1 ~= nil then
+		  local _, _, compositeSpellName = string.find(arg1, pattern);
+    end
 		if (compositeSpellName == nil) then return; end
-		
+
 		local _, _, spellName, rankNum = string.find(compositeSpellName, "(.+) %(.+ (%d+)%)");
 		if (spellName and rankNum and spellName ~= "" and rankNum ~= "" ) then
 			spellName = string.gsub(spellName, "^%s+", ""); -- strip leading spaces
@@ -146,7 +148,7 @@ function FHH_OnEvent(event, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9
 				table.sort(FHH_AbilityInfo[FHH_State.RealmPlayer]);
 			end
 		end
-		
+
 	end
 
 end
@@ -168,7 +170,7 @@ function FHH_ChatCommandHandler(msg)
 		GFWUtils.Print("Fizzwidget Hunter's Helper "..FHH_VERSION);
 		return;
 	end
-		
+
 	if (msg == "onlyhunter") then
 		FHH_Config.Tooltip = "hunter";
 		GFWUtils.Print("Hunter's Helper is enabled; beast tooltips will display ability info only when playing a Hunter character.");
@@ -196,22 +198,22 @@ function FHH_ChatCommandHandler(msg)
 		end
 		return;
 	end
-	
+
 	if (msg == "reset") then
 		FHH_Config = { };
 		FHH_Config.Tooltip = true;
-		FHH_AbilityInfo = nil;				
-		FHH_NewInfo = nil;	
-				
+		FHH_AbilityInfo = nil;
+		FHH_NewInfo = nil;
+
 		GFWUtils.Print("Hunter's Helper has been reset to default options and all stored data cleared.");
 		return;
 	end
-		
+
 	if (msg == "test") then
 		FHH_RunAllTests();
 		return;
 	end
-		
+
 	if (msg == "dynamic") then
 		FHH_SpellNamesToIDs = {};
 		FHH_SpellIDsToNames = {};
@@ -223,19 +225,19 @@ function FHH_ChatCommandHandler(msg)
 		GFWUtils.Print("Hunter's Helper: only consulting dynamic tables until next reload.");
 		return;
 	end
-		
+
 	local _, _, cmd, spellName, rankNum = string.find(msg, "(find%w*) ([^%d]+) *(%d*)");
 	if (cmd == "find" or cmd == "findall") then
 		if (spellName == nil or spellName == "") then
 			GFWUtils.Print("Usage: "..GFWUtils.Hilite("/hh find <ability> <rank>"));
 			return;
 		end
-		
+
 		spellName = string.gsub(spellName, "^%s+", ""); -- strip leading spaces
 		spellName = string.gsub(spellName, "%s+$", ""); -- and trailing spaces
 		spellName = string.lower(spellName);
 		local spellID;
-		
+
 		-- first, look up the input against our spell ID keys
 		if (FHH_SpellIDsToNames[spellName]) then
 			spellID = spellName;
@@ -246,20 +248,20 @@ function FHH_ChatCommandHandler(msg)
 
 		-- failing that, try looking it up as a proper name, case insensitively
 		if (spellID == nil) then
-			for properName in FHH_SpellNamesToIDs do
+			for properName in pairs(FHH_SpellNamesToIDs) do
 				if (string.lower(properName) == spellName) then
 					spellID = FHH_SpellNamesToIDs[properName];
 				end
 			end
 			if (spellID == nil and FHH_NewInfo and FHH_NewInfo.SpellNamesToIDs) then
-				for properName in FHH_NewInfo.SpellNamesToIDs do
+				for properName in pairs(FHH_NewInfo.SpellNamesToIDs) do
 					if (string.lower(properName) == spellName) then
 						spellID = FHH_NewInfo.SpellNamesToIDs[properName];
 					end
 				end
 			end
 		end
-		
+
 		if (spellID == nil) then
 			GFWUtils.Print(GFWUtils.Hilite(spellName).." is not a known beast ability.");
 			return;
@@ -267,10 +269,10 @@ function FHH_ChatCommandHandler(msg)
 		FHH_Find(spellID, rankNum);
 		return;
 	end
-	
+
 	-- if we got all the way to here, we got invalid input.
 	FHH_ChatCommandHandler("help");
-	
+
 end
 
 function FHH_ModifyTooltip(unit)
@@ -284,7 +286,7 @@ function FHH_ModifyTooltip(unit)
 	if (unlocalizedCreepName) then
 		creepName = unlocalizedCreepName;
 	end
-	
+
 	-- if this beast is in our database, make sure we have the right level range & type info
 	FHH_CheckBeastLevel(creepName, creepLevel, creepType);
 
@@ -294,7 +296,7 @@ function FHH_ModifyTooltip(unit)
 	end
 	for lineNum = 1, GameTooltip:NumLines() do
 		local lineText = getglobal("GameTooltipTextLeft"..lineNum):GetText();
-		if (lineText) then 
+		if (lineText) then
 			if (string.find(lineText, LIGHTYELLOW_FONT_COLOR_CODE)) then
 				return; -- if we've already added a line to this tooltip, we should stop.
 			end
@@ -303,7 +305,7 @@ function FHH_ModifyTooltip(unit)
 				abilitiesLine = lineNum;
 				local beastLoreList = GFWUtils.Split(beastLoreInfo, ", ");
 				local beastSpellTable = {};
-				for _, niceSpellName in beastLoreList do
+				for _, niceSpellName in pairs(beastLoreList) do
 					local _, _, spellName, rankNum = string.find(niceSpellName, "^(.+) %(.+ (%d+)%)$");
 					if (spellName == nil or spellName == "" or tonumber(rankNum) == nil) then
 						GFWUtils.PrintOnce(GFWUtils.Red("Hunter's Helper Error: ").."Can't parse spell "..GFWUtils.Hilite(niceSpellName).." from "..GFWUtils.Hilite(critter)..".");
@@ -333,7 +335,7 @@ function FHH_ModifyTooltip(unit)
 		abilitiesList = FHH_BeastInfo[creepName];
 		if (FHH_NewInfo and FHH_NewInfo.BadBeastInfo and FHH_NewInfo.BadBeastInfo[creepName]) then
 			local newAbilitiesList = {};
-			for spellID, rankNum in abilitiesList do
+			for spellID, rankNum in pairs(abilitiesList) do
 				if (FHH_NewInfo.BadBeastInfo[creepName][spellID] ~= rankNum) then
 					newAbilitiesList[spellID] = rankNum;
 				end
@@ -341,13 +343,13 @@ function FHH_ModifyTooltip(unit)
 			abilitiesList = newAbilitiesList;
 		end
 	end
-			
+
 	if (abilitiesList and GFWTable.Count(abilitiesList) > 0) then
-	
+
 		-- build textual description from that list (with color coding if you're a hunter)
 		local coloredList = {};
 		local _, myClass = UnitClass("player");
-		for spellName, rankNum in abilitiesList do
+		for spellName, rankNum in pairs(abilitiesList) do
 			if (myClass == "HUNTER" and FHH_AbilityInfo and FHH_AbilityInfo[FHH_State.RealmPlayer] and GFWTable.Count(FHH_AbilityInfo[FHH_State.RealmPlayer]) > 0) then
 				local playerRanks = FHH_AbilityInfo[FHH_State.RealmPlayer][spellName];
 				if (playerRanks and GFWTable.IndexOf(playerRanks, rankNum) ~= 0) then
@@ -361,7 +363,7 @@ function FHH_ModifyTooltip(unit)
 		end
 		local abilitiesText = table.concat(coloredList, ", ");
 		abilitiesText = string.gsub(abilitiesText, "( %d+)", " ("..RANK.."%1)");
-	
+
 		-- add it to the tooltip (or, if Beast Lore, replace its line with our color-coded one)
 		if (abilitiesLine) then
 			local lineText = getglobal("GameTooltipTextLeft"..abilitiesLine);
@@ -396,10 +398,10 @@ function FHH_ScanCraftFrame()
 			rankNum = tonumber(rankNum);
 		end
 		local craftIcon = GetCraftIcon(i);
-		if (craftIcon) then 
+		if (craftIcon) then
 			craftIcon = string.gsub(craftIcon, "^Interface\\Icons\\", "");
-		end			
-	
+		end
+
 		local spellID = FHH_SpellIDforIcon(craftIcon, craftName);
 		local nameSpellID = FHH_SpellIDforName(craftName);
 		if (spellID and nameSpellID and spellID ~= nameSpellID) then
@@ -411,14 +413,14 @@ function FHH_ScanCraftFrame()
 			end
 			FHH_NewInfo.SpellIDAliases[nameSpellID] = spellID;
 		end
-	
+
 		if (FHH_AbilityInfo[FHH_State.RealmPlayer][spellID] == nil) then
 			FHH_AbilityInfo[FHH_State.RealmPlayer][spellID] = {};
-		end			
+		end
 		if (GFWTable.IndexOf(FHH_AbilityInfo[FHH_State.RealmPlayer][spellID], rankNum) == 0) then
 			table.insert(FHH_AbilityInfo[FHH_State.RealmPlayer][spellID], rankNum)
 		end;
-	
+
 		if ( requiredLevel and requiredLevel > 0 ) then
 			FHH_RecordNewRequiredLevel(spellID, tonumber(rankNum), requiredLevel, true);
 		end
@@ -431,7 +433,7 @@ function FHH_Find(spellID, rankNum)
 	if (niceSpellName == nil and FHH_NewInfo and FHH_NewInfo.SpellIDsToNames and FHH_NewInfo.SpellIDsToNames[spellID]) then
 		niceSpellName = FHH_NewInfo.SpellIDsToNames[spellID];
 	end
-	
+
 	local spellInfo = FHH_SpellInfo[spellID];
 	local newSpellInfo;
 	if (FHH_NewInfo and FHH_NewInfo.SpellInfo) then
@@ -458,14 +460,14 @@ function FHH_Find(spellID, rankNum)
 			rankTable = newRankTable;
 		end
 	end
-	
+
 	rankNum = tonumber(rankNum);
 	if (rankNum) then
 		if not (rankTable[rankNum]) then
 			GFWUtils.Print(GFWUtils.Hilite(niceSpellName).." is not known to have a rank "..GFWUtils.Hilite(rankNum)..".");
 			return;
 		end
-		
+
 		-- report minimum pet level for ability
 		local minLevel = rankTable[rankNum];
 		local petLevel = 60;
@@ -488,7 +490,7 @@ function FHH_Find(spellID, rankNum)
 		end
 	else
 		local knownRanks = {};
-		for rankNum in rankTable do
+		for rankNum in pairs(rankTable) do
 			table.insert(knownRanks, rankNum);
 		end
 		local newRanks = {};
@@ -524,7 +526,7 @@ function FHH_Find(spellID, rankNum)
 		GFWUtils.Print("You should already know "..GFWUtils.Hilite(niceSpellName.." "..rankNum).." if you've learned Beast Training.");
 		return;
 	end
-	
+
 	-- case 2: spells taught by trainers, for which rank doesn't matter
 	if (type(spellInfo) == "string") then
 		local spellSummary = niceSpellName;
@@ -534,9 +536,9 @@ function FHH_Find(spellID, rankNum)
 		GFWUtils.Print(GFWUtils.Hilite(spellSummary).." is learned from "..spellInfo..".");
 		return;
 	end
-	
+
 	if (rankNum == nil) then return; end
-	
+
 	--case 3: lookup by spell and rank, report by zone (sanity check first)
 	local spellRankInfo = spellInfo[rankNum];
 	local maxZones = MAX_REPORTED_ZONES;
@@ -561,9 +563,9 @@ function FHH_Find(spellID, rankNum)
 		GFWUtils.Print(GFWZones.LocalizedZone(zoneName)..": "..GFWUtils.Hilite(FHH_CreatureListString(critterList)));
 		numReportedZones = numReportedZones + 1;
 	end
-	
+
 	local zoneConnections = GFWZones.ConnectionsForZone(zoneName);
-	
+
 	if (zoneConnections == nil) then
 		-- player is in an unknown zone; instead of doing nothing, let's pick a known zone to start searching from.
 		local _, race = UnitRace("player");
@@ -597,9 +599,9 @@ function FHH_Find(spellID, rankNum)
 		end
 		zoneConnections = GFWZones.ConnectionsForZone(zoneName);
 	end
-	
-	for _, zones in zoneConnections do
-		for _, zoneName in zones do
+
+	for _, zones in pairs(zoneConnections) do
+		for _, zoneName in pairs(zones) do
 			local critterList = {};
 			if (spellRankInfo[zoneName] and table.getn(spellRankInfo[zoneName]) > 0) then
 				critterList = GFWTable.Merge(critterList, spellRankInfo[zoneName]);
@@ -614,7 +616,7 @@ function FHH_Find(spellID, rankNum)
 			end
 		end
 	end
-	
+
 	if (numReportedZones == 0) then
 		-- if we get here, we think we know about the spell but can't find beasts with it in our table. this shouldn't happen.
 		GFWUtils.Print(GFWUtils.Red("Hunter's Helper "..FHH_VERSION.." error:").." got spell info for "..GFWUtils.Hilite(niceSpellName.." "..rankNum).." but no zone info. Please report to gazmik@fizzwidget.com.");
@@ -623,7 +625,7 @@ end
 
 function FHH_CreatureListString(critterList)
 	local listString = ""
-	for _, name in critterList do
+	for _, name in pairs(critterList) do
 		local info = FHH_BeastLevels[name];
 		if (info == nil and FHH_NewInfo and FHH_NewInfo.BeastLevels) then
 			info = FHH_NewInfo.BeastLevels[name];
@@ -645,7 +647,7 @@ function FHH_CreatureListString(critterList)
 			if (info.max and info.max > UnitLevel("player")) then
 				maxLevel = RED_FONT_COLOR_CODE..info.max..FONT_COLOR_CODE_CLOSE;
 			end
-			if (info.min == info.max or info.max == nil) then			
+			if (info.min == info.max or info.max == nil) then
 				listString = listString.."("..minLevel;
 			else
 				listString = listString.."("..minLevel.."-"..maxLevel;
@@ -654,7 +656,7 @@ function FHH_CreatureListString(critterList)
 				listString = listString.."), ";
 			else
 				listString = listString.." "..info.type.."), ";
-			end				
+			end
 		end
 	end
 	listString = string.gsub(listString, ", $", "");
@@ -692,7 +694,7 @@ function FHH_SpellIDforIcon(spellIcon, spellName)
 	end
 	if (spellID == nil) then
 		spellID = FHH_SpellIDforName(spellName);
-	end	
+	end
 	if (spellID == nil) then
 		spellID = FHH_RecordNewSpellIcon(spellIcon, spellName);
 	end
@@ -706,9 +708,9 @@ function FHH_CheckPetSpells()
 	local spellIcon = GetSpellTexture(i, BOOKTYPE_PET);
 	while spellName do
 		local _, _, rankNum = string.find(spellRank, "(%d+)");
-		if (spellIcon) then 
+		if (spellIcon) then
 			spellIcon = string.gsub(spellIcon, "^Interface\\Icons\\", "");
-		end			
+		end
 		local spellID = FHH_SpellIDforIcon(spellIcon, spellName);
 		local nameSpellID = FHH_SpellIDforName(spellName);
 		if (spellID and nameSpellID and spellID ~= nameSpellID) then
@@ -726,7 +728,7 @@ function FHH_CheckPetSpells()
 		spellName, spellRank = GetSpellName(i, BOOKTYPE_PET);
 		spellIcon = GetSpellTexture(i, BOOKTYPE_PET);
 	end
-	
+
 	if (GFWTable.Count(currentPetSpells) > 0) then
 		FHH_ProcessAliases();
 		FHH_CheckSpellTables(FHH_State.TamingCritter, currentPetSpells);
@@ -748,7 +750,7 @@ end
 
 function FHH_SpellDescriptions(spellList)
 	local descriptions = {};
-	for spellID, rankNum in spellList do
+	for spellID, rankNum in pairs(spellList) do
 		table.insert(descriptions, FHH_SpellDescription(spellID, rankNum));
 	end
 	return descriptions;
@@ -759,13 +761,13 @@ function FHH_SpellDescripionList(spellList)
 end
 
 function FHH_CheckSpellTables(critter, spellList, level, family)
-	
+
 	if ( spellList == nil or GFWTable.Count(spellList) == 0 ) then return; end
 
 	-- process any recently learned spellID aliases so we record data correctly.
 	local newSpellList = {};
 	local changed = false;
-	for spellID, rankNum in spellList do
+	for spellID, rankNum in pairs(spellList) do
 		if (FHH_NewInfo and FHH_NewInfo.SpellIDAliases and FHH_NewInfo.SpellIDAliases[spellID]) then
 			spellID = FHH_NewInfo.SpellIDAliases[spellID];
 			changed = true;
@@ -774,7 +776,7 @@ function FHH_CheckSpellTables(critter, spellList, level, family)
 	end
 	if (changed) then
 		spellList = newSpellList;
-	end	
+	end
 
 	if (level == nil) then
 		level = UnitLevel("pet");
@@ -782,12 +784,12 @@ function FHH_CheckSpellTables(critter, spellList, level, family)
 	if (family == nil) then
 		family = UnitCreatureFamily("pet");
 	end
-	
+
 	if ( FHH_BeastInfo[critter] ) then
-	
-		-- record any spells the critter has that our built-in table doesn't know about 
+
+		-- record any spells the critter has that our built-in table doesn't know about
 		local unknownPetSpells = { };
-		for spellID, rankNum in spellList do
+		for spellID, rankNum in pairs(spellList) do
 			if ( FHH_BeastInfo[critter][spellID] == nil ) then
 				unknownPetSpells[spellID] = rankNum;
 			end
@@ -801,10 +803,10 @@ function FHH_CheckSpellTables(critter, spellList, level, family)
 			end
 			FHH_NewInfo.BeastInfo[critter] = spellList; -- we want to remember the entire current spells list
 		end
-		
+
 		-- record any spells our built-in table thinks the critter has, but the critter actually doesn't
 		local wrongPetSpells = { };
-		for spellID, rankNum in FHH_BeastInfo[critter] do
+		for spellID, rankNum in pairs(FHH_BeastInfo[critter]) do
 			if ( spellList[spellID] ~= rankNum ) then
 				wrongPetSpells[spellID] = rankNum;
 			end
@@ -818,14 +820,14 @@ function FHH_CheckSpellTables(critter, spellList, level, family)
 			end
 			FHH_NewInfo.BadBeastInfo[critter] = wrongPetSpells;
 		end
-		
+
 		if (FHH_NewInfo and (( FHH_NewInfo.BeastInfo and FHH_NewInfo.BeastInfo[critter]) or (FHH_NewInfo.BadBeastInfo and FHH_NewInfo.BadBeastInfo[critter]))) then
 			local details = "(expected "..FHH_SpellDescripionList(FHH_BeastInfo[critter]).."; found "..FHH_SpellDescripionList(spellList)..").";
 			GFWUtils.PrintOnce("Hunter's Helper "..FHH_VERSION.." has incorrect data on "..GFWUtils.Hilite(critter.." "..details).." Please submit a correction to gazmik@fizzwidget.com.)", 60);
 		end
-		
+
 	else
-	
+
 		-- this pet is entirely new to our list
 		if (FHH_NewInfo == nil) then
 			FHH_NewInfo = {};
@@ -835,13 +837,13 @@ function FHH_CheckSpellTables(critter, spellList, level, family)
 		end
 		FHH_NewInfo.BeastInfo[critter] = spellList;
 		FHH_CheckBeastLevel(critter, level, FHH_State.TamingType);
-		
+
 		local details = "(found "..FHH_SpellDescripionList(spellList).." in "..GetRealZoneText()..").";
 		GFWUtils.PrintOnce("Hunter's Helper "..FHH_VERSION.." has no data on "..GFWUtils.Hilite(critter.." "..details).." Please submit a correction to gazmik@fizzwidget.com.)", 60);
 
 	end
-	
-	for spellID, rankNum in spellList do
+
+	for spellID, rankNum in pairs(spellList) do
 		FHH_RecordNewSpellInfo(spellID, rankNum, critter);
 		FHH_RecordNewRequiredFamily(spellID, family);
 		FHH_RecordNewRequiredLevel(spellID, rankNum, level);
@@ -851,15 +853,15 @@ end
 
 function FHH_RecordNewSpellInfo(spellID, rankNum, critter)
 	if (FHH_SpellInfo[spellID] and FHH_SpellInfo[spellID][rankNum]) then
-		for zoneName, beastsTable in FHH_SpellInfo[spellID][rankNum] do
-			for _, aBeast in beastsTable do
+		for zoneName, beastsTable in pairs(FHH_SpellInfo[spellID][rankNum]) do
+			for _, aBeast in pairs(beastsTable) do
 				if (aBeast == critter) then
 					return; -- we've already recorded this in our static data
 				end
 			end
 		end
 	end
-	
+
 	if (FHH_NewInfo == nil) then
 		FHH_NewInfo = {};
 	end
@@ -885,7 +887,7 @@ function FHH_RecordNewRequiredFamily(spellID, family)
 	if (FHH_LearnableBy[spellID] and GFWTable.KeyOf(FHH_LearnableBy[spellID], family)) then
 		return; -- we've already recorded this in our static data
 	end
-	
+
 	if (FHH_NewInfo == nil) then
 		FHH_NewInfo = {};
 	end
@@ -900,11 +902,11 @@ function FHH_RecordNewRequiredFamily(spellID, family)
 	end
 end
 
-function FHH_RecordNewRequiredLevel(spellID, rankNum, level, verified)	
+function FHH_RecordNewRequiredLevel(spellID, rankNum, level, verified)
 	if (FHH_RequiredLevel[spellID] and FHH_RequiredLevel[spellID][rankNum]) then
 		return; -- we've already recorded this in our static data
 	end
-	
+
 	if (FHH_NewInfo == nil) then
 		FHH_NewInfo = {};
 	end
@@ -998,12 +1000,12 @@ end
 
 function FHH_ProcessAliases()
 	if (FHH_NewInfo and FHH_NewInfo.SpellIDAliases) then
-		for oldID, newID in FHH_NewInfo.SpellIDAliases do
-			
+		for oldID, newID in pairs(FHH_NewInfo.SpellIDAliases) do
+
 			if (FHH_NewInfo.SpellNamesToIDs) then
 				local newNamesToIDs = {};
 				local changed = false;
-				for name, id in FHH_NewInfo.SpellNamesToIDs do
+				for name, id in pairs(FHH_NewInfo.SpellNamesToIDs) do
 					if (id == oldID) then
 						newNamesToIDs[name] = newID;
 						changed = true;
@@ -1017,7 +1019,7 @@ function FHH_ProcessAliases()
 			end
 
 			if (FHH_NewInfo.BeastInfo) then
-				for beast, spellList in FHH_NewInfo.BeastInfo do
+				for beast, spellList in pairs(FHH_NewInfo.BeastInfo) do
 					if (spellList[oldID]) then
 						spellList[newID] = spellList[oldID];
 						spellList[oldID] = nil;
@@ -1026,16 +1028,16 @@ function FHH_ProcessAliases()
 			end
 
 			if (FHH_NewInfo.BadBeastInfo) then
-				for beast, spellList in FHH_NewInfo.BadBeastInfo do
+				for beast, spellList in pairs(FHH_NewInfo.BadBeastInfo) do
 					if (spellList[oldID]) then
 						spellList[newID] = spellList[oldID];
 						spellList[oldID] = nil;
 					end
 				end
 			end
-			
+
 			if (FHH_AbilityInfo) then
-				for realmPlayer, abilityTable in FHH_AbilityInfo do
+				for realmPlayer, abilityTable in pairs(FHH_AbilityInfo) do
 					if (abilityTable[oldID]) then
 						abilityTable[newID] = abilityTable[oldID];
 						abilityTable[oldID] = nil;
@@ -1047,22 +1049,21 @@ function FHH_ProcessAliases()
 				FHH_NewInfo.SpellIDsToNames[newID] = FHH_NewInfo.SpellIDsToNames[oldID];
 				FHH_NewInfo.SpellIDsToNames[oldID] = nil;
 			end
-						
+
 			if (FHH_NewInfo.RequiredLevel and FHH_NewInfo.RequiredLevel[oldID]) then
 				FHH_NewInfo.RequiredLevel[newID] = FHH_NewInfo.RequiredLevel[oldID];
-				FHH_NewInfo.RequiredLevel[oldID] = nil;				
+				FHH_NewInfo.RequiredLevel[oldID] = nil;
 			end
 
 			if (FHH_NewInfo.LearnableBy and FHH_NewInfo.LearnableBy[oldID]) then
 				FHH_NewInfo.LearnableBy[newID] = FHH_NewInfo.LearnableBy[oldID];
-				FHH_NewInfo.LearnableBy[oldID] = nil;				
+				FHH_NewInfo.LearnableBy[oldID] = nil;
 			end
 
 			if (FHH_NewInfo.SpellInfo and FHH_NewInfo.SpellInfo[oldID]) then
 				FHH_NewInfo.SpellInfo[newID] = FHH_NewInfo.SpellInfo[oldID];
-				FHH_NewInfo.SpellInfo[oldID] = nil;				
+				FHH_NewInfo.SpellInfo[oldID] = nil;
 			end
 		end
 	end
 end
-

@@ -1,6 +1,6 @@
 ------------------------------------------------------
 -- GFWZones.lua
--- Utilities for working with geographic data 
+-- Utilities for working with geographic data
 ------------------------------------------------------
 
 GFWZONES_THIS_VERSION = 6;
@@ -17,13 +17,13 @@ function GFWZones_temp_LocalizedZone(aZone)
 		return localized;
 	else
 		return aZone;
-	end	
+	end
 end
 
 function GFWZones_temp_UnlocalizedZone(aZone)
 	local key = GFWTable.KeyOf(GFWZones.Localized, aZone);
 	if (key) then
-		return key;	
+		return key;
 	else
 		return aZone;
 	end
@@ -33,19 +33,19 @@ function GFWZones_temp_ConnectionsForZone(aZone)
 
 	local G = GFWZones;
 	aZone = G.UnlocalizedZone(aZone);
-	
+
 	local zoneConnections = { };
 	local _, myFaction = UnitFactionGroup("player");
-	
+
 	if not (G.AdjacentZones[aZone] or G.FlightZones[myFaction][aZone]) then return nil; end
-	
+
 	-- find zones one step away (adjacent to this zone or one flight/boat/zeppelin away)
 	zoneConnections[1] = GFWTable.Merge(G.AdjacentZones[aZone], G.FlightZones[myFaction][aZone]);
 	zoneConnections[1] = GFWTable.Subtract(zoneConnections[1], {aZone});
-	
+
 	-- then iterate to find zones more than one step away
 	numSteps = 2;
-	repeat	
+	repeat
 		zoneConnections[numSteps] = { };
 		for i=1, table.getn(zoneConnections[numSteps-1]) do
 			zoneConnections[numSteps] = GFWTable.Merge(zoneConnections[numSteps], G.FlightZones[myFaction][zoneConnections[numSteps-1][i]]);
@@ -153,7 +153,7 @@ local tempAdjacentZones = {
 
 local tempFlightZones = {
 	[FACTION_ALLIANCE] = {
-		-- Deeprun Tram is in here even though it's not a "flight" per se because Horde can't easily travel through it. 
+		-- Deeprun Tram is in here even though it's not a "flight" per se because Horde can't easily travel through it.
 		["Arathi Highlands"] = {"Hillsbrad Foothills", "Ironforge", "The Hinterlands", "Loch Modan", "Wetlands", "Arathi Basin"},
 		["Ashenvale"] = {"Darkshore"},
 		["Azshara"] = {"Felwood", "Darkshore"},
@@ -232,7 +232,7 @@ if (G.Version == nil or (tonumber(G.Version) ~= nil and G.Version < GFWZONES_THI
 	if (G.AdjacentZones == nil) then
 		G.AdjacentZones = {};
 	end
-	for aZone, adjacentZones in tempAdjacentZones do
+	for aZone, adjacentZones in pairs(tempAdjacentZones) do
 		if (G.AdjacentZones[aZone] == nil) then
 			G.AdjacentZones[aZone] = {};
 		end
@@ -241,11 +241,11 @@ if (G.Version == nil or (tonumber(G.Version) ~= nil and G.Version < GFWZONES_THI
 	if (G.FlightZones == nil) then
 		G.FlightZones = {};
 	end
-	for _, faction in {FACTION_ALLIANCE, FACTION_HORDE} do
+	for _, faction in pairs({FACTION_ALLIANCE, FACTION_HORDE}) do
 		if (G.FlightZones[faction] == nil) then
 			G.FlightZones[faction] = {};
 		end
-		for aZone, flightZones in tempFlightZones[faction] do
+		for aZone, flightZones in pairs(tempFlightZones[faction]) do
 			if (G.FlightZones[faction][aZone] == nil) then
 				G.FlightZones[faction][aZone] = {};
 			end
@@ -257,7 +257,7 @@ if (G.Version == nil or (tonumber(G.Version) ~= nil and G.Version < GFWZONES_THI
 	G.LocalizedZone = GFWZones_temp_LocalizedZone;
 	G.UnlocalizedZone = GFWZones_temp_UnlocalizedZone;
 	G.ConnectionsForZone = GFWZones_temp_ConnectionsForZone;
-	
+
 	-- Set version number
 	G.Version = GFWZONES_THIS_VERSION;
 end

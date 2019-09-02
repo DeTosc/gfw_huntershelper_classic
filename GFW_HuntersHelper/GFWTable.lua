@@ -1,6 +1,6 @@
 ------------------------------------------------------
 -- GFWTable.lua
--- Utilities for manipulating tables 
+-- Utilities for manipulating tables
 ------------------------------------------------------
 
 GFWTABLE_THIS_VERSION = 5;
@@ -31,8 +31,8 @@ end
 
 -- Median: returns the median value (most useful in a table of numbers, but usable in any sorted table)
 function GFWTable_temp_Median(aTable)
-	if (aTable == nil or table.getn(aTable) == 0) then 
-		return nil; 
+	if (aTable == nil or table.getn(aTable) == 0) then
+		return nil;
 	end
 	if (table.getn(aTable) == 1) then
 		return aTable[1];
@@ -115,7 +115,7 @@ function GFWTable_temp_KeyOf(aTable, item)
 	if (aTable == nil or type(aTable) ~= "table") then
 		return nil; -- caller probably won't expect this, causing traceable error in their code
 	end
-	for key, value in aTable do
+	for key, value in pairs(aTable) do
 		if (item == value) then
 			return key;
 		end
@@ -123,7 +123,7 @@ function GFWTable_temp_KeyOf(aTable, item)
 	return nil;
 end
 
--- Copy: copies one table's elements into a new table (useful if you want to change them while preserving the first table). 
+-- Copy: copies one table's elements into a new table (useful if you want to change them while preserving the first table).
 --       Not a deep copy.
 function GFWTable_temp_Copy(aTable)
 	local newTable = { };
@@ -139,7 +139,7 @@ function GFWTable_temp_Count(aTable)
 		return nil; -- caller probably won't expect this, causing traceable error in their code
 	end
 	local count = 0;
-	for key, value in aTable do
+	for key, value in pairs(aTable) do
 		count = count + 1;
 	end
 	return count;
@@ -166,9 +166,7 @@ if (G.Version == nil or (tonumber(G.Version) ~= nil and G.Version < GFWTABLE_THI
 	G.KeyOf = GFWTable_temp_KeyOf;
 	G.Copy = GFWTable_temp_Copy;
 	G.Count = GFWTable_temp_Count;
-	
+
 	-- Set version number
 	G.Version = GFWTABLE_THIS_VERSION;
 end
-
-
